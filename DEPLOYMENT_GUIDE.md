@@ -39,8 +39,12 @@ Project ini menggunakan Supabase, jadi Vercel perlu tahu API Keys yang ada di fi
 Di halaman konfigurasi "Configure Project":
 1. Buka bagian **Environment Variables**.
 2. Masukkan semua key yang ada di file `.env` lokal Anda:
-   - `VITE_SUPABASE_URL`: (copy value dari file .env)
-   - `VITE_SUPABASE_ANON_KEY`: (copy value dari file .env)
+   - `VITE_SUPABASE_URL`
+   - `VITE_SUPABASE_ANON_KEY`
+   - `VITE_GOOGLE_CLIENT_ID`
+   - `VITE_SHARED_CALENDAR_ID`
+   
+   *(Salin nilai-nilainya dari file `.env` di komputer Anda)*
    
 > **Catatan**: Jangan ikutkan file `.env` ke GitHub (sudah ada di .gitignore), tapi masukkan isinya manual ke dashboard Vercel.
 
