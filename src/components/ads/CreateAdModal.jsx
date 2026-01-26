@@ -3,6 +3,7 @@ import { X, Calendar as CalendarIcon, Clock, Type, User } from 'lucide-react'
 import { Button } from '../ui/Button'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../ui/Card'
 import { getDefaultPublishTime, calculateTakedownDate, formatDate } from '../../lib/dateUtils'
+import { cn } from '../../lib/utils'
 
 export default function CreateAdModal({ isOpen, onClose, onSubmit, checkAvailability, slotInfo, checkingSlots, loading }) {
     const [formData, setFormData] = React.useState({
