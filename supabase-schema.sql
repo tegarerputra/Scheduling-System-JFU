@@ -29,7 +29,13 @@ CREATE TABLE ads (
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW(),
   cancelled_at TIMESTAMPTZ,
-  cancelled_by UUID REFERENCES users(id)
+  cancelled_by UUID REFERENCES users(id),
+  -- New Auto-Brief Fields
+  survey_link TEXT,
+  respondent_criteria TEXT,
+  incentive_details TEXT,
+  incentive_type TEXT CHECK (incentive_type IN ('gopay', 'dana')),
+  background_color TEXT
 );
 
 -- Create indexes

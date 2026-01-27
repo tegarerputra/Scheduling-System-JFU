@@ -31,12 +31,7 @@ export function calculateTakedownDate(publishDate, durationDays) {
 export function getDefaultPublishTime() {
     const today = new Date()
     today.setHours(15, 0, 0, 0)
-
-    // Adjust for timezone offset to get correct local time string
-    const offset = today.getTimezoneOffset() * 60000 // offset in milliseconds
-    const localTime = new Date(today.getTime() - offset)
-
-    return localTime
+    return today
 }
 
 /**

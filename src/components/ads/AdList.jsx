@@ -1,7 +1,7 @@
 import React from 'react'
 import AdCard from './AdCard'
 
-export default function AdList({ ads, loading, filter, onCancel }) {
+export default function AdList({ ads, loading, filter, onCancel, onEdit, onSchedule }) {
     if (loading) {
         return (
             <div className="space-y-4">
@@ -34,7 +34,7 @@ export default function AdList({ ads, loading, filter, onCancel }) {
     return (
         <div className="space-y-4">
             {ads.map((ad) => (
-                <AdCard key={ad.id} ad={ad} onCancel={onCancel} />
+                <AdCard key={ad.id} ad={ad} onCancel={onCancel} onEdit={onEdit} onSchedule={onSchedule} />
             ))}
         </div>
     )

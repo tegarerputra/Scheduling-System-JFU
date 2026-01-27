@@ -12,11 +12,12 @@ import AdList from '../components/ads/AdList'
 import AdCalendar from '../components/ads/AdCalendar'
 import CreateAdModal from '../components/ads/CreateAdModal'
 import ExtendAdModal from '../components/ads/ExtendAdModal'
+import EditAdModal from '../components/ads/EditAdModal'
 import { Button } from '../components/ui/Button'
 
 export default function Dashboard() {
     const { user } = useStore()
-    const { ads, loading, createAd, cancelAd, extendAd } = useAds()
+    const { ads, loading, createAd, cancelAd, extendAd, updateAdDetails, scheduleAd } = useAds()
 
     // View State
     const [viewMode, setViewMode] = useState('list') // 'list' | 'calendar'
@@ -26,6 +27,8 @@ export default function Dashboard() {
     // Modal State
     const [showCreateForm, setShowCreateForm] = useState(false)
     const [showExtendForm, setShowExtendForm] = useState(false)
+    const [showEditForm, setShowEditForm] = useState(false)
+    const [currentEditingAd, setCurrentEditingAd] = useState(null)
 
     // Slot Check State
     const [slotInfo, setSlotInfo] = useState(null)
@@ -80,6 +83,8 @@ export default function Dashboard() {
                     publish_at: publishDateTime.toISOString(),
                     takedown_at: takedownDateTime.toISOString(),
                     duration_days: parseInt(formData.duration_days),
+                    incentive_details: formData.incentive_details,
+                    survey_link: formData.survey_link,
                 }
 
                 const result = await createAd(adData)
@@ -156,6 +161,37 @@ export default function Dashboard() {
         })
     }
 
+    const handleScheduleAd = async (adId) => {
+        toast.promise(scheduleAd(adId), {
+            loading: 'Scheduling ad...',
+            success: 'Ad scheduled and synced to Calendar!',
+            error: 'Failed to schedule ad'
+        })
+    }
+
+    const handleEditClick = (ad) => {
+        setCurrentEditingAd(ad)
+        setShowEditForm(true)
+    }
+
+    const handleUpdateSubmit = async (adId, formData) => {
+        const promise = updateAdDetails(adId, formData)
+
+        toast.promise(promise, {
+            loading: 'Updating ad...',
+            success: (result) => {
+                if (result.success) {
+                    setShowEditForm(false)
+                    setCurrentEditingAd(null)
+                    return 'Ad updated successfully'
+                } else {
+                    throw new Error(result.error)
+                }
+            },
+            error: (err) => `Failed to update: ${err.message}`
+        })
+    }
+
     const filteredAds = ads.filter((ad) => {
         if (filter === 'all') return true
         return ad.status === filter
@@ -225,7 +261,7 @@ export default function Dashboard() {
                     <div className="space-y-6">
                         {/* Filters */}
                         <div className="flex overflow-x-auto pb-2 -mx-4 px-4 sm:mx-0 sm:px-0 sm:pb-0 gap-2 hide-scrollbar">
-                            {['all', 'scheduled', 'live', 'completed', 'cancelled'].map((f) => (
+                            {['all', 'draft', 'scheduled', 'live', 'completed', 'cancelled'].map((f) => (
                                 <button
                                     key={f}
                                     onClick={() => setFilter(f)}
@@ -246,6 +282,8 @@ export default function Dashboard() {
                             loading={loading}
                             filter={filter}
                             onCancel={handleCancelAd}
+                            onEdit={handleEditClick}
+                            onSchedule={handleScheduleAd}
                         />
                     </div>
                 ) : (
@@ -273,6 +311,17 @@ export default function Dashboard() {
                 checkingSlots={checkingSlots}
                 loading={false}
                 ads={ads}
+            />
+
+            <EditAdModal
+                isOpen={showEditForm}
+                onClose={() => {
+                    setShowEditForm(false)
+                    setCurrentEditingAd(null)
+                }}
+                onSubmit={handleUpdateSubmit}
+                ad={currentEditingAd}
+                loading={loading}
             />
         </div>
     )

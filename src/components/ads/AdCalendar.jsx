@@ -1,5 +1,5 @@
 import React from 'react'
-import { startOfMonth, endOfMonth, startOfWeek, endOfWeek, eachDayOfInterval, format, isSameMonth, isSameDay, isToday } from 'date-fns'
+import { startOfMonth, endOfMonth, startOfWeek, endOfWeek, eachDayOfInterval, format, isSameMonth, isSameDay, isToday, addDays } from 'date-fns'
 import { ChevronLeft, ChevronRight, AlertCircle, CheckCircle2 } from 'lucide-react'
 import { Button } from '../ui/Button'
 import { cn } from '../../lib/utils'
@@ -17,13 +17,18 @@ export default function AdCalendar({ ads, currentDate = new Date(), onDateChange
         end: endDate,
     })
 
-    // Group ads by date
+    // Group ads by date (spanning duration)
     const adsByDate = ads.reduce((acc, ad) => {
-        // Basic implementation: check if ad is active on this day
-        // For now, let's just mark the publish date to simplify
-        const dateKey = format(new Date(ad.publish_at), 'yyyy-MM-dd')
-        if (!acc[dateKey]) acc[dateKey] = []
-        acc[dateKey].push(ad)
+        const startDate = new Date(ad.publish_at)
+        const duration = parseInt(ad.duration_days) || 1
+
+        for (let i = 0; i < duration; i++) {
+            const currentDate = addDays(startDate, i)
+            const dateKey = format(currentDate, 'yyyy-MM-dd')
+
+            if (!acc[dateKey]) acc[dateKey] = []
+            acc[dateKey].push(ad)
+        }
         return acc
     }, {})
 
