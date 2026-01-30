@@ -1,5 +1,5 @@
 import React from 'react'
-import { X, Calendar as CalendarIcon, Clock, Link as LinkIcon } from 'lucide-react'
+import { X, Calendar as CalendarIcon, Clock, Link as LinkIcon, Banknote, Users } from 'lucide-react'
 import { Button } from '../ui/Button'
 import { getDefaultPublishTime, calculateTakedownDate, formatDate } from '../../lib/dateUtils'
 import { cn } from '../../lib/utils'
@@ -10,6 +10,9 @@ export default function ExtendAdModal({ isOpen, onClose, onSubmit, checkAvailabi
         publish_at: getDefaultPublishTime().toISOString().slice(0, 16),
         duration_days: 1,
         note: '',
+        incentive_nominal: '',
+        incentive_winners: '',
+        survey_link: '',
     })
 
     const extendableAds = ads.filter(ad => ad.status !== 'cancelled' && ad.ad_type === 'new')
@@ -21,6 +24,9 @@ export default function ExtendAdModal({ isOpen, onClose, onSubmit, checkAvailabi
                 publish_at: getDefaultPublishTime().toISOString().slice(0, 16),
                 duration_days: 1,
                 note: '',
+                incentive_nominal: '',
+                incentive_winners: '',
+                survey_link: '',
             })
             checkAvailability(new Date(getDefaultPublishTime()), 'extended')
         }
@@ -28,7 +34,37 @@ export default function ExtendAdModal({ isOpen, onClose, onSubmit, checkAvailabi
 
     const handleInputChange = (e) => {
         const { name, value } = e.target
-        setFormData(prev => ({ ...prev, [name]: value }))
+
+        if (name === 'original_ad_id') {
+            const selectedAd = ads.find(ad => ad.id === value)
+            if (selectedAd) {
+                // Parse incentive details
+                let nominal = ''
+                let winners = ''
+
+                if (selectedAd.incentive_details) {
+                    // Try to parse "Rp 50.000 x 5 Pemenang"
+                    const nominalMatch = selectedAd.incentive_details.match(/Rp\s*([\d.]+)/)
+                    const winnersMatch = selectedAd.incentive_details.match(/x\s*(\d+)/)
+
+                    if (nominalMatch) nominal = nominalMatch[1].replace(/\./g, '')
+                    if (winnersMatch) winners = winnersMatch[1]
+                }
+
+                setFormData(prev => ({
+                    ...prev,
+                    [name]: value,
+                    survey_link: selectedAd.survey_link || '',
+                    note: selectedAd.description || '',
+                    incentive_nominal: nominal,
+                    incentive_winners: winners
+                }))
+            } else {
+                setFormData(prev => ({ ...prev, [name]: value }))
+            }
+        } else {
+            setFormData(prev => ({ ...prev, [name]: value }))
+        }
 
         if (name === 'publish_at' && value) {
             checkAvailability(new Date(value), 'extended')
@@ -37,7 +73,25 @@ export default function ExtendAdModal({ isOpen, onClose, onSubmit, checkAvailabi
 
     const handleSubmit = (e) => {
         e.preventDefault()
-        onSubmit(formData)
+
+        // Format incentive string
+        const nominal = parseInt(formData.incentive_nominal.replace(/\D/g, '')) || 0
+        const winners = parseInt(formData.incentive_winners) || 0
+        const total = nominal * winners
+
+        const formatIDR = (num) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(num)
+        const incentiveString = `${formatIDR(nominal)} x ${winners} Pemenang (Total: ${formatIDR(total)})`
+
+        const payload = {
+            ...formData,
+            incentive_details: incentiveString
+        }
+
+        // Remove temp fields
+        delete payload.incentive_nominal
+        delete payload.incentive_winners
+
+        onSubmit(payload)
     }
 
     if (!isOpen) return null
@@ -135,6 +189,61 @@ export default function ExtendAdModal({ isOpen, onClose, onSubmit, checkAvailabi
                                     </div>
                                 )}
                             </div>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label className="text-sm font-medium text-slate-700 mb-1.5 block">Ad Details <span className="text-slate-400 font-normal">(Auto-filled from Original Ad)</span></label>
+                        <div className="space-y-3">
+                            <div className="grid grid-cols-2 gap-3">
+                                <div className="relative">
+                                    <Banknote className="absolute left-3 top-2.5 w-4 h-4 text-slate-400" />
+                                    <input
+                                        type="number"
+                                        name="incentive_nominal"
+                                        value={formData.incentive_nominal}
+                                        onChange={handleInputChange}
+                                        required
+                                        placeholder="Nominal (e.g. 50000)"
+                                        className="w-full pl-9 pr-3 py-2 text-sm border border-slate-200 rounded-lg focus:ring-2 focus:ring-green-500/20 focus:border-green-500 outline-none transition-all"
+                                    />
+                                </div>
+                                <div className="relative">
+                                    <Users className="absolute left-3 top-2.5 w-4 h-4 text-slate-400" />
+                                    <input
+                                        type="number"
+                                        name="incentive_winners"
+                                        value={formData.incentive_winners}
+                                        onChange={handleInputChange}
+                                        required
+                                        placeholder="Winners (e.g. 5)"
+                                        className="w-full pl-9 pr-3 py-2 text-sm border border-slate-200 rounded-lg focus:ring-2 focus:ring-green-500/20 focus:border-green-500 outline-none transition-all"
+                                    />
+                                </div>
+                            </div>
+                            {formData.incentive_nominal && formData.incentive_winners && (
+                                <div className="text-xs text-slate-500 bg-slate-50 px-3 py-2 rounded-md border border-slate-100 flex justify-between">
+                                    <span>Total Budget:</span>
+                                    <span className="font-semibold text-slate-700">
+                                        {new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(
+                                            (parseInt(formData.incentive_nominal) || 0) * (parseInt(formData.incentive_winners) || 0)
+                                        )}
+                                    </span>
+                                </div>
+                            )}
+
+                            <div className="relative">
+                                <LinkIcon className="absolute left-3 top-2.5 w-4 h-4 text-slate-400" />
+                                <input
+                                    type="url"
+                                    name="survey_link"
+                                    value={formData.survey_link}
+                                    onChange={handleInputChange}
+                                    placeholder="Survey Link"
+                                    className="w-full pl-9 pr-3 py-2 text-sm border border-slate-200 rounded-lg focus:ring-2 focus:ring-green-500/20 focus:border-green-500 outline-none transition-all"
+                                />
+                            </div>
+
                         </div>
                     </div>
 

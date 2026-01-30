@@ -115,3 +115,21 @@ BEGIN
   RETURN result;
 END;
 $$ LANGUAGE plpgsql;
+
+-- Function to force refresh statuses (Lazy Update)
+CREATE OR REPLACE FUNCTION refresh_ad_statuses()
+RETURNS void AS $$
+BEGIN
+  -- Update 'scheduled' ads that should be 'live'
+  UPDATE ads
+  SET updated_at = NOW() -- Touching the row triggers update_ad_status()
+  WHERE status = 'scheduled' 
+  AND NOW() >= publish_at;
+
+  -- Update 'live' ads that should be 'completed'
+  UPDATE ads
+  SET updated_at = NOW() -- Touching the row triggers update_ad_status()
+  WHERE status = 'live' 
+  AND NOW() >= takedown_at;
+END;
+$$ LANGUAGE plpgsql;

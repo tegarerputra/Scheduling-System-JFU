@@ -15,6 +15,10 @@ export default function useAds() {
 
         try {
             setLoading(true)
+
+            // Lazy refresh: Update statuses that might be stale
+            await supabase.rpc('refresh_ad_statuses')
+
             const { data, error } = await supabase
                 .from('ads')
                 .select('*')
