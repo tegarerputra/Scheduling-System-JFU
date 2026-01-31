@@ -100,6 +100,11 @@ export default function Login() {
                     localStorage.setItem('user_session', JSON.stringify(userData))
                     localStorage.setItem('google_credential', response.credential || accessToken) // Keep for backup/token needs
 
+                    // Store Token Expiry (Default to 1 hour if not provided, but usually it is 3599)
+                    const expiresIn = response.expires_in || 3599
+                    const expiresAt = Date.now() + (expiresIn * 1000)
+                    localStorage.setItem('token_expires_at', expiresAt.toString())
+
                     // Navigate to dashboard
                     navigate('/dashboard')
                 } catch (error) {

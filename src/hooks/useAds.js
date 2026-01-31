@@ -3,6 +3,7 @@ import { supabase } from '../lib/supabase'
 import useStore from '../store/useStore'
 import { createCalendarEvents, deleteCalendarEvents } from '../lib/calendarApi'
 import { SHARED_CALENDAR_ID } from '../lib/googleAuth'
+import { checkTokenValidity } from '../lib/authUtils'
 
 export default function useAds() {
     const { ads, setAds, addAd, updateAd, removeAd, user } = useStore()
@@ -25,7 +26,29 @@ export default function useAds() {
                 .order('publish_at', { ascending: false })
 
             if (error) throw error
-            setAds(data || [])
+
+            // Sort data by status priority then by publish_at
+            const statusPriority = {
+                'draft': 0,
+                'scheduled': 1,
+                'live': 2,
+                'completed': 3,
+                'cancelled': 4
+            }
+
+            const sortedData = (data || []).sort((a, b) => {
+                const priorityA = statusPriority[a.status] ?? 99
+                const priorityB = statusPriority[b.status] ?? 99
+
+                if (priorityA !== priorityB) {
+                    return priorityA - priorityB
+                }
+
+                // Secondary sort: Newest publish_at first
+                return new Date(b.publish_at) - new Date(a.publish_at)
+            })
+
+            setAds(sortedData)
         } catch (err) {
             console.error('Error fetching ads:', err)
             setError(err.message)
@@ -36,6 +59,7 @@ export default function useAds() {
 
     // Create new ad
     const createAd = async (adData) => {
+        if (!checkTokenValidity()) return { success: false, error: 'Session expired' }
         if (!user?.id) {
             return { success: false, error: 'User not authenticated' }
         }
@@ -113,6 +137,7 @@ export default function useAds() {
 
     // Schedule Draft Ad (Approve & Sync to Calendar)
     const scheduleAd = async (adId) => {
+        if (!checkTokenValidity()) return { success: false, error: 'Session expired' }
         if (!user?.id) return { success: false, error: 'User not authenticated' }
 
         try {
@@ -166,6 +191,7 @@ export default function useAds() {
 
     // Extend existing ad
     const extendAd = async (originalAdId, extensionData) => {
+        if (!checkTokenValidity()) return { success: false, error: 'Session expired' }
         if (!user?.id) {
             return { success: false, error: 'User not authenticated' }
         }
@@ -205,6 +231,7 @@ export default function useAds() {
 
     // Cancel ad
     const cancelAd = async (adId) => {
+        if (!checkTokenValidity()) return { success: false, error: 'Session expired' }
         if (!user?.id) {
             return { success: false, error: 'User not authenticated' }
         }
@@ -263,6 +290,7 @@ export default function useAds() {
 
     // Update ad details (brief info)
     const updateAdDetails = async (adId, updates) => {
+        if (!checkTokenValidity()) return { success: false, error: 'Session expired' }
         if (!user?.id) {
             return { success: false, error: 'User not authenticated' }
         }
